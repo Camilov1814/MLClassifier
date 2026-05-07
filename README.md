@@ -65,6 +65,6 @@ El notebook tarda ~10-15 minutos en ejecutarse completo. La sección 4 (GridSear
 
 Para entender el **razonamiento detrás de cada decisión** (preprocesamiento, métrica, modelo, feature selection, experimentos), ver [DOCUMENTACION_Sleep_Health.md](./DOCUMENTACION_Sleep_Health.md).
 
-## Autor
+## Autores 
+Carolina Herazo , Daniel Giraldo, Sebastian Ruiz y Camilo Valencia
 
-Camilo — Ingeniería de Sistemas
