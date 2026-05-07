@@ -67,18 +67,21 @@ Aunque HGB gana en métricas, conservar Random Forest como challenger tiene tres
 
 ## 5. Feature Selection: qué se hizo y por qué
 
-Se combinaron **4 métodos complementarios** en lugar de uno solo, porque cada uno tiene sesgos distintos:
+Se combinaron **7 métodos complementarios** en lugar de uno solo, porque cada uno tiene sesgos distintos. La idea es que una feature genuinamente importante aparezca consistentemente entre los rankings de varios métodos.
 
-| Método | Captura | Limitación |
-|---|---|---|
-| ANOVA F-test | Asociación lineal univariada | Ignora interacciones |
-| Mutual Information | Dependencia no lineal univariada | Ignora interacciones |
-| Importancia de RF | Uso real en árboles | Sesgada a features con muchos valores únicos |
-| Permutation Importance (HGB) | Pérdida real al permutar | Computacionalmente costosa |
+| Método | Tipo | Captura | Limitación |
+|---|---|---|---|
+| Correlación con target | Univariado lineal | Asociación lineal directa | Ignora interacciones y no linealidad |
+| ANOVA F-test | Univariado lineal | Diferencia significativa entre clases | Asume relaciones lineales |
+| RFECV | Wrapper | Importancia evaluando subsets reales del modelo | Costoso, depende del estimador base |
+| Importancia de RF | Embedded | Uso real en splits de árboles | Sesgada a features con muchos valores únicos |
+| Permutation Importance (HGB) | Modelo-agnóstico | Pérdida real al permutar la feature | Computacionalmente costosa |
+| SHAP | Explicabilidad | Contribución marginal por instancia (teoría de juegos) | Costo computacional alto |
+| Mutual Information | Univariado no lineal | Dependencia general, no solo lineal | Ignora interacciones |
 
-Una feature aparece en el "consenso" si está en el top-15 de **3+ métodos**. Esto filtra ruido específico de cada método y captura señal real.
+Una feature aparece en el "consenso" si está en el top-15 de **4+ métodos** (sobre 7). Este umbral filtra ruido específico de cada método y refuerza features genuinamente importantes.
 
-**El propósito es identificar redundancia y irrelevancia, no detectar leakage.** El leakage requiere análisis del proceso de generación de datos, no estadísticas — se aborda con el experimento D más adelante.
+**El propósito es identificar redundancia e irrelevancia, no detectar leakage.** El leakage requiere análisis del proceso de generación de datos, no estadísticas — se aborda con el experimento D más adelante.
 
 ---
 
@@ -133,7 +136,11 @@ Si quitamos las features sospechosas y el modelo se mantiene, **descartamos** qu
 ## 9. Reproducibilidad
 
 - `random_state=42` en todos los splits y modelos.
-- Pipeline ajustado guardado en `preprocesados/pipeline.pkl`.
-- LabelEncoder en `preprocesados/label_encoder.pkl`.
-- Modelo final (HGB optimizado) en `preprocesados/modelo_final.pkl`.
-- Para predecir nuevos datos: cargar pipeline + modelo + label_encoder → `pipeline.transform(X_new)` → `modelo.predict(...)` → `label_encoder.inverse_transform(...)`.
+- Artefactos guardados en `preprocesados/`:
+  - `pipeline.pkl` — `ColumnTransformer` ajustado con train.
+  - `label_encoder.pkl` — encoder ordinal del target.
+  - `best_estimators.pkl` — diccionario con los 8 modelos optimizados (resultado del GridSearch).
+  - `gs_df.pkl` — tabla de resultados del GridSearch.
+  - `modelo_final.pkl` — HGB re-entrenado con train completo.
+- El guardado de `best_estimators` y `gs_df` permite **rehacer las secciones 6-7 sin tener que volver a ejecutar el GridSearch** (que tarda decenas de minutos).
+- Para predecir nuevos datos: cargar `pipeline` + `modelo_final` + `label_encoder` → `pipeline.transform(X_new)` → `modelo.predict(...)` → `label_encoder.inverse_transform(...)`.
